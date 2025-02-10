@@ -14,6 +14,7 @@ interface DisasterMapProps {
 const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   
   useEffect(() => {
@@ -50,36 +51,45 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       projection: 'globe'
     });
 
-    map.current.on('style.load', () => {
-      map.current?.setFog({
-        color: 'rgb(15, 15, 15)',
-        'high-color': 'rgb(25, 25, 25)',
-        'horizon-blend': 0.2
-      });
-      setMapLoaded(true);
+    map.current.on('load', () => {
+      if (map.current) {
+        map.current.setFog({
+          color: 'rgb(15, 15, 15)',
+          'high-color': 'rgb(25, 25, 25)',
+          'horizon-blend': 0.2
+        });
+        setMapLoaded(true);
+      }
     });
 
     return () => {
-      map.current?.remove();
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
   }, []);
+
+  // Clear existing markers
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  };
 
   useEffect(() => {
     if (!map.current || !mapLoaded || isLoading) return;
 
-    // Remove existing markers
-    const markers = document.getElementsByClassName('mapboxgl-marker');
-    while (markers[0]) {
-      markers[0].remove();
-    }
+    clearMarkers();
 
     // Add new markers
     disasters.forEach((disaster) => {
+      if (!map.current) return;
+
       const el = document.createElement('div');
       el.className = `disaster-type disaster-type-${disaster.type.toLowerCase()}`;
       el.textContent = getDisasterEmoji(disaster.type);
       
-      new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([disaster.longitude, disaster.latitude])
         .setPopup(
           new mapboxgl.Popup({ offset: 25 })
@@ -91,8 +101,10 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
                 ${disaster.forecast ? `<p class="mt-2 font-semibold">Forecast: ${disaster.forecast}</p>` : ''}
               </div>
             `)
-        )
-        .addTo(map.current!);
+        );
+
+      marker.addTo(map.current);
+      markersRef.current.push(marker);
         
       el.addEventListener('click', () => onMarkerClick(disaster));
     });
