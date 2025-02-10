@@ -16,35 +16,51 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Mock data fetching - replace with real API calls
   useEffect(() => {
     const fetchDisasters = async () => {
       setLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Fetch earthquake data from USGS
+        const earthquakeRes = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
+        const earthquakeData = await earthquakeRes.json();
         
-        // Mock data
-        const mockDisasters = [
-          {
-            id: '1',
+        // Fetch weather alerts from weather.gov
+        const weatherRes = await fetch('https://api.weather.gov/alerts/active');
+        const weatherData = await weatherRes.json();
+
+        // Process and combine the data
+        const processedDisasters = [
+          ...earthquakeData.features.map((eq: any) => ({
+            id: eq.id,
             type: 'Earthquake',
-            severity: 4,
-            latitude: 35.6762,
-            longitude: 139.6503,
-            location: 'Tokyo, Japan',
-            timestamp: new Date().toISOString(),
-            description: 'Magnitude 6.5 earthquake detected'
-          },
-          // Add more mock disasters here
+            severity: Math.round(eq.properties.mag),
+            latitude: eq.geometry.coordinates[1],
+            longitude: eq.geometry.coordinates[0],
+            location: eq.properties.place,
+            timestamp: new Date(eq.properties.time).toISOString(),
+            description: `Magnitude ${eq.properties.mag} earthquake detected at depth ${eq.geometry.coordinates[2]}km`
+          })),
+          ...weatherData.features.map((alert: any) => ({
+            id: alert.id,
+            type: 'Weather',
+            severity: alert.properties.severity === 'Extreme' ? 5 : 
+                     alert.properties.severity === 'Severe' ? 4 : 3,
+            latitude: alert.geometry.coordinates[1],
+            longitude: alert.geometry.coordinates[0],
+            location: alert.properties.areaDesc,
+            timestamp: new Date(alert.properties.sent).toISOString(),
+            description: alert.properties.headline,
+            forecast: alert.properties.description
+          }))
         ];
-        
-        setDisasters(mockDisasters);
+
+        setDisasters(processedDisasters);
         toast({
           title: "Data Updated",
           description: "Latest disaster information loaded successfully.",
         });
       } catch (error) {
+        console.error('Error fetching disaster data:', error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -62,10 +78,38 @@ const Index = () => {
   }, [selectedTypes, severity, timeRange]);
 
   const handleDisasterSelect = (disaster: any) => {
-    toast({
-      title: `${disaster.type} Details`,
-      description: disaster.description,
-    });
+    // Fetch detailed weather forecast for the selected location
+    const fetchForecast = async () => {
+      try {
+        const forecastRes = await fetch(
+          `https://api.weather.gov/points/${disaster.latitude},${disaster.longitude}`
+        );
+        const pointData = await forecastRes.json();
+        const forecastRes2 = await fetch(pointData.properties.forecast);
+        const forecastData = await forecastRes2.json();
+        
+        toast({
+          title: `${disaster.type} Details`,
+          description: (
+            <div>
+              <p>{disaster.description}</p>
+              {forecastData.properties.periods[0] && (
+                <p className="mt-2">
+                  <strong>Weather Forecast:</strong> {forecastData.properties.periods[0].detailedForecast}
+                </p>
+              )}
+            </div>
+          ),
+        });
+      } catch (error) {
+        toast({
+          title: `${disaster.type} Details`,
+          description: disaster.description,
+        });
+      }
+    };
+
+    fetchForecast();
   };
 
   return (

@@ -19,12 +19,11 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    // Free map style URL from OpenStreetMap
     const openStreetMapStyle = {
-      version: 8 as 8, // Explicitly type as literal 8
+      version: 8 as const,
       sources: {
         'osm': {
-          type: 'raster',
+          type: 'raster' as const,
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
           attribution: '&copy; OpenStreetMap Contributors'
@@ -33,7 +32,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       layers: [
         {
           id: 'osm',
-          type: 'raster',
+          type: 'raster' as const,
           source: 'osm',
           minzoom: 0,
           maxzoom: 19
@@ -41,7 +40,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       ]
     };
 
-    mapboxgl.accessToken = 'placeholder'; // Required by mapbox-gl but not used with OSM
+    mapboxgl.accessToken = 'placeholder';
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -89,6 +88,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
                 <h3 class="font-bold">${disaster.type}</h3>
                 <p>Severity: ${disaster.severity}</p>
                 <p>${disaster.description}</p>
+                ${disaster.forecast ? `<p class="mt-2 font-semibold">Forecast: ${disaster.forecast}</p>` : ''}
               </div>
             `)
         )
