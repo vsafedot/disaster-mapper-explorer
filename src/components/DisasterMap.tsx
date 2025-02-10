@@ -21,7 +21,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
 
     // Free map style URL from OpenStreetMap
     const openStreetMapStyle = {
-      version: 8,
+      version: 8 as 8, // Explicitly type as literal 8
       sources: {
         'osm': {
           type: 'raster',
