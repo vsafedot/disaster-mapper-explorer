@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 interface DisasterMapProps {
@@ -20,11 +19,33 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN'; // Replace with your token
+    // Free map style URL from OpenStreetMap
+    const openStreetMapStyle = {
+      version: 8,
+      sources: {
+        'osm': {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap Contributors'
+        }
+      },
+      layers: [
+        {
+          id: 'osm',
+          type: 'raster',
+          source: 'osm',
+          minzoom: 0,
+          maxzoom: 19
+        }
+      ]
+    };
+
+    mapboxgl.accessToken = 'placeholder'; // Required by mapbox-gl but not used with OSM
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: openStreetMapStyle,
       center: [0, 20],
       zoom: 1.5,
       projection: 'globe'
