@@ -21,7 +21,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
     if (!mapContainer.current || map.current) return;
 
     const openStreetMapStyle = {
-      version: 8,
+      version: 8 as const, // Explicitly type version as 8
       sources: {
         'osm': {
           type: 'raster',
