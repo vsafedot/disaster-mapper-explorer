@@ -20,13 +20,35 @@ const Index = () => {
     const fetchDisasters = async () => {
       setLoading(true);
       try {
-        // Fetch earthquake data from USGS
+        // Fetch earthquake data from USGS (open data)
         const earthquakeRes = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
         const earthquakeData = await earthquakeRes.json();
         
-        // Fetch weather alerts from weather.gov
-        const weatherRes = await fetch('https://api.weather.gov/alerts/active');
-        const weatherData = await weatherRes.json();
+        // Mock weather data (since we're not using weather.gov API)
+        const mockWeatherEvents = [
+          {
+            id: 'w1',
+            type: 'Weather',
+            severity: 4,
+            latitude: 40.7128,
+            longitude: -74.0060,
+            location: 'New York, USA',
+            timestamp: new Date().toISOString(),
+            description: 'Heavy thunderstorms expected',
+            forecast: 'Strong winds and heavy rainfall predicted for the next 24 hours'
+          },
+          {
+            id: 'w2',
+            type: 'Weather',
+            severity: 3,
+            latitude: 51.5074,
+            longitude: -0.1278,
+            location: 'London, UK',
+            timestamp: new Date().toISOString(),
+            description: 'Severe wind warning',
+            forecast: 'High-speed winds expected with possible disruption to travel'
+          }
+        ];
 
         // Process and combine the data
         const processedDisasters = [
@@ -40,18 +62,7 @@ const Index = () => {
             timestamp: new Date(eq.properties.time).toISOString(),
             description: `Magnitude ${eq.properties.mag} earthquake detected at depth ${eq.geometry.coordinates[2]}km`
           })),
-          ...weatherData.features.map((alert: any) => ({
-            id: alert.id,
-            type: 'Weather',
-            severity: alert.properties.severity === 'Extreme' ? 5 : 
-                     alert.properties.severity === 'Severe' ? 4 : 3,
-            latitude: alert.geometry.coordinates[1],
-            longitude: alert.geometry.coordinates[0],
-            location: alert.properties.areaDesc,
-            timestamp: new Date(alert.properties.sent).toISOString(),
-            description: alert.properties.headline,
-            forecast: alert.properties.description
-          }))
+          ...mockWeatherEvents
         ];
 
         setDisasters(processedDisasters);
@@ -78,38 +89,19 @@ const Index = () => {
   }, [selectedTypes, severity, timeRange]);
 
   const handleDisasterSelect = (disaster: any) => {
-    // Fetch detailed weather forecast for the selected location
-    const fetchForecast = async () => {
-      try {
-        const forecastRes = await fetch(
-          `https://api.weather.gov/points/${disaster.latitude},${disaster.longitude}`
-        );
-        const pointData = await forecastRes.json();
-        const forecastRes2 = await fetch(pointData.properties.forecast);
-        const forecastData = await forecastRes2.json();
-        
-        toast({
-          title: `${disaster.type} Details`,
-          description: (
-            <div>
-              <p>{disaster.description}</p>
-              {forecastData.properties.periods[0] && (
-                <p className="mt-2">
-                  <strong>Weather Forecast:</strong> {forecastData.properties.periods[0].detailedForecast}
-                </p>
-              )}
-            </div>
-          ),
-        });
-      } catch (error) {
-        toast({
-          title: `${disaster.type} Details`,
-          description: disaster.description,
-        });
-      }
-    };
-
-    fetchForecast();
+    toast({
+      title: `${disaster.type} Details`,
+      description: (
+        <div>
+          <p>{disaster.description}</p>
+          {disaster.forecast && (
+            <p className="mt-2">
+              <strong>Forecast:</strong> {disaster.forecast}
+            </p>
+          )}
+        </div>
+      ),
+    });
   };
 
   return (

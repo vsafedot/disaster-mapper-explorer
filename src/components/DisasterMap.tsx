@@ -21,10 +21,10 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
     if (!mapContainer.current || map.current) return;
 
     const openStreetMapStyle = {
-      version: 8 as const,
+      version: 8,
       sources: {
         'osm': {
-          type: 'raster' as const,
+          type: 'raster',
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
           attribution: '&copy; OpenStreetMap Contributors'
@@ -33,7 +33,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       layers: [
         {
           id: 'osm',
-          type: 'raster' as const,
+          type: 'raster',
           source: 'osm',
           minzoom: 0,
           maxzoom: 19
@@ -41,7 +41,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       ]
     };
 
-    mapboxgl.accessToken = 'placeholder';
+    mapboxgl.accessToken = 'dummy-token'; // Needed for mapbox-gl to initialize, but not used with OSM
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
