@@ -21,10 +21,10 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
     if (!mapContainer.current || map.current) return;
 
     const openStreetMapStyle = {
-      version: 8 as const, // Explicitly type version as 8
+      version: 8 as const,
       sources: {
         'osm': {
-          type: 'raster',
+          type: 'raster' as const,
           tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
           tileSize: 256,
           attribution: '&copy; OpenStreetMap Contributors'
@@ -33,7 +33,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       layers: [
         {
           id: 'osm',
-          type: 'raster',
+          type: 'raster' as const,
           source: 'osm',
           minzoom: 0,
           maxzoom: 19
@@ -41,7 +41,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       ]
     };
 
-    mapboxgl.accessToken = 'dummy-token'; // Needed for mapbox-gl to initialize, but not used with OSM
+    mapboxgl.accessToken = 'dummy-token';
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -70,7 +70,6 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
     };
   }, []);
 
-  // Clear existing markers
   const clearMarkers = () => {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
@@ -81,7 +80,6 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
 
     clearMarkers();
 
-    // Add new markers
     disasters.forEach((disaster) => {
       if (!map.current) return;
 
@@ -89,26 +87,33 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       el.className = `disaster-type disaster-type-${disaster.type.toLowerCase()}`;
       el.textContent = getDisasterEmoji(disaster.type);
       
+      const popupContent = `
+        <div class="p-3 max-w-xs">
+          <h3 class="font-bold text-lg mb-2">${disaster.type} Alert</h3>
+          <p class="mb-1"><strong>Location:</strong> ${disaster.location}</p>
+          <p class="mb-1"><strong>Time:</strong> ${new Date(disaster.timestamp).toLocaleString()}</p>
+          <p class="mb-1"><strong>Severity:</strong> ${disaster.severity}/5</p>
+          <p class="mb-2">${disaster.description}</p>
+          ${disaster.forecast ? `<p class="text-amber-500"><strong>Forecast:</strong> ${disaster.forecast}</p>` : ''}
+        </div>
+      `;
+
       const marker = new mapboxgl.Marker(el)
         .setLngLat([disaster.longitude, disaster.latitude])
         .setPopup(
           new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <div class="p-2">
-                <h3 class="font-bold">${disaster.type}</h3>
-                <p>Severity: ${disaster.severity}</p>
-                <p>${disaster.description}</p>
-                ${disaster.forecast ? `<p class="mt-2 font-semibold">Forecast: ${disaster.forecast}</p>` : ''}
-              </div>
-            `)
-        );
+            .setHTML(popupContent)
+        )
+        .addTo(map.current);
 
-      marker.addTo(map.current);
+      el.addEventListener('click', () => {
+        onMarkerClick(disaster);
+        marker.togglePopup();
+      });
+
       markersRef.current.push(marker);
-        
-      el.addEventListener('click', () => onMarkerClick(disaster));
     });
-  }, [disasters, mapLoaded, isLoading]);
+  }, [disasters, mapLoaded, isLoading, onMarkerClick]);
 
   const getDisasterEmoji = (type: string) => {
     const emojis: { [key: string]: string } = {
@@ -139,3 +144,4 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
 };
 
 export default DisasterMap;
+

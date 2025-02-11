@@ -9,7 +9,7 @@ import { Menu } from 'lucide-react';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedTypes, setSelectedTypes] = useState(['earthquake', 'flood', 'fire']);
+  const [selectedTypes, setSelectedTypes] = useState(['earthquake', 'flood', 'fire', 'weather']);
   const [severity, setSeverity] = useState(3);
   const [timeRange, setTimeRange] = useState(24);
   const [disasters, setDisasters] = useState([]);
@@ -65,7 +65,15 @@ const Index = () => {
           ...mockWeatherEvents
         ];
 
-        setDisasters(processedDisasters);
+        // Filter disasters based on selected types and severity
+        const filteredDisasters = processedDisasters.filter(disaster => {
+          const typeMatch = selectedTypes.includes(disaster.type.toLowerCase());
+          const severityMatch = disaster.severity >= severity;
+          const timeMatch = new Date(disaster.timestamp) >= new Date(Date.now() - timeRange * 60 * 60 * 1000);
+          return typeMatch && severityMatch && timeMatch;
+        });
+
+        setDisasters(filteredDisasters);
         toast({
           title: "Data Updated",
           description: "Latest disaster information loaded successfully.",
@@ -90,17 +98,20 @@ const Index = () => {
 
   const handleDisasterSelect = (disaster: any) => {
     toast({
-      title: `${disaster.type} Details`,
+      title: `${disaster.type} Alert - ${disaster.location}`,
       description: (
-        <div>
+        <div className="space-y-2">
+          <p><strong>Time:</strong> {new Date(disaster.timestamp).toLocaleString()}</p>
+          <p><strong>Severity:</strong> {disaster.severity}/5</p>
           <p>{disaster.description}</p>
           {disaster.forecast && (
-            <p className="mt-2">
+            <p className="text-amber-500">
               <strong>Forecast:</strong> {disaster.forecast}
             </p>
           )}
         </div>
       ),
+      duration: 5000,
     });
   };
 
@@ -155,3 +166,4 @@ const Index = () => {
 };
 
 export default Index;
+
