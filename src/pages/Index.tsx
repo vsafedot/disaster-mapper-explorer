@@ -5,7 +5,7 @@ import DisasterList from '@/components/DisasterList';
 import Filters from '@/components/Filters';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
+import { Menu, ExternalLink } from 'lucide-react';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -15,6 +15,17 @@ const Index = () => {
   const [disasters, setDisasters] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  const getVerificationLink = (disaster: any) => {
+    const baseLinks: { [key: string]: string } = {
+      Earthquake: `https://earthquake.usgs.gov/earthquakes/map/?extent=${disaster.latitude},${disaster.longitude}`,
+      Weather: `https://www.weather.gov/warnings`,
+      Flood: 'https://water.weather.gov/ahps/',
+      Fire: 'https://www.fireweatheravalanche.org/fire/',
+      Volcano: 'https://www.usgs.gov/programs/VHP'
+    };
+    return baseLinks[disaster.type] || '#';
+  };
 
   useEffect(() => {
     const fetchDisasters = async () => {
@@ -97,6 +108,7 @@ const Index = () => {
   }, [selectedTypes, severity, timeRange]);
 
   const handleDisasterSelect = (disaster: any) => {
+    const verificationLink = getVerificationLink(disaster);
     toast({
       title: `${disaster.type} Alert - ${disaster.location}`,
       description: (
@@ -109,6 +121,15 @@ const Index = () => {
               <strong>Forecast:</strong> {disaster.forecast}
             </p>
           )}
+          <a
+            href={verificationLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 mt-2"
+          >
+            Verify Details
+            <ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       ),
       duration: 5000,
@@ -166,4 +187,3 @@ const Index = () => {
 };
 
 export default Index;
-

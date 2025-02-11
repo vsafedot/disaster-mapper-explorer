@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 
 interface DisasterMapProps {
   disasters: any[];
@@ -70,6 +70,17 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
     };
   }, []);
 
+  const getVerificationLink = (disaster: any) => {
+    const baseLinks: { [key: string]: string } = {
+      Earthquake: `https://earthquake.usgs.gov/earthquakes/map/?extent=${disaster.latitude},${disaster.longitude}`,
+      Weather: `https://www.weather.gov/warnings`,
+      Flood: 'https://water.weather.gov/ahps/',
+      Fire: 'https://www.fireweatheravalanche.org/fire/',
+      Volcano: 'https://www.usgs.gov/programs/VHP'
+    };
+    return baseLinks[disaster.type] || '#';
+  };
+
   const clearMarkers = () => {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
@@ -87,6 +98,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       el.className = `disaster-type disaster-type-${disaster.type.toLowerCase()}`;
       el.textContent = getDisasterEmoji(disaster.type);
       
+      const verificationLink = getVerificationLink(disaster);
       const popupContent = `
         <div class="p-3 max-w-xs">
           <h3 class="font-bold text-lg mb-2">${disaster.type} Alert</h3>
@@ -95,6 +107,17 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
           <p class="mb-1"><strong>Severity:</strong> ${disaster.severity}/5</p>
           <p class="mb-2">${disaster.description}</p>
           ${disaster.forecast ? `<p class="text-amber-500"><strong>Forecast:</strong> ${disaster.forecast}</p>` : ''}
+          <a href="${verificationLink}" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             class="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 mt-2">
+            Verify Details 
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
         </div>
       `;
 
@@ -144,4 +167,3 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
 };
 
 export default DisasterMap;
-
