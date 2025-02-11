@@ -1,10 +1,11 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Loader2, ExternalLink, Info } from "lucide-react";
+import { Loader2, ExternalLink, Info, MapPin, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DisasterMapProps {
   disasters: any[];
@@ -18,7 +19,12 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [hoveredDisaster, setHoveredDisaster] = useState<any>(null);
-  
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [safeLocation, setSafeLocation] = useState<[number, number] | null>(null);
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const safeMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const { toast } = useToast();
+
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
@@ -72,6 +78,88 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
     };
   }, []);
 
+  const trackUserLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLocation: [number, number] = [position.coords.longitude, position.coords.latitude];
+          setUserLocation(newLocation);
+
+          if (map.current) {
+            if (userMarkerRef.current) {
+              userMarkerRef.current.remove();
+            }
+
+            const el = document.createElement('div');
+            el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg';
+            el.innerHTML = '<div class="text-white"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><point cx="12" cy="12"/></svg></div>';
+
+            userMarkerRef.current = new mapboxgl.Marker(el)
+              .setLngLat(newLocation)
+              .setPopup(
+                new mapboxgl.Popup({ offset: 25 })
+                  .setHTML('<strong>Your Location</strong>')
+              )
+              .addTo(map.current);
+
+            map.current.flyTo({
+              center: newLocation,
+              zoom: 10,
+              duration: 2000
+            });
+
+            toast({
+              title: "Location Updated",
+              description: "Your current location has been detected and the map has been centered to your position.",
+            });
+          }
+        },
+        (error) => {
+          toast({
+            variant: "destructive",
+            title: "Location Error",
+            description: "Unable to get your location. Please check your browser permissions.",
+          });
+        }
+      );
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Geolocation Unavailable",
+        description: "Your browser doesn't support geolocation.",
+      });
+    }
+  };
+
+  const markSafeLocation = () => {
+    if (!map.current) return;
+
+    const center = map.current.getCenter();
+    const newSafeLocation: [number, number] = [center.lng, center.lat];
+    setSafeLocation(newSafeLocation);
+
+    if (safeMarkerRef.current) {
+      safeMarkerRef.current.remove();
+    }
+
+    const el = document.createElement('div');
+    el.className = 'flex items-center justify-center w-8 h-8 bg-green-500 rounded-full border-2 border-white shadow-lg';
+    el.innerHTML = '<div class="text-white"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg></div>';
+
+    safeMarkerRef.current = new mapboxgl.Marker(el)
+      .setLngLat(newSafeLocation)
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 })
+          .setHTML('<strong>Safe Location</strong><p>Center of current map view</p>')
+      )
+      .addTo(map.current);
+
+    toast({
+      title: "Safe Location Marked",
+      description: "The center of the current map view has been marked as a safe location.",
+    });
+  };
+
   const getVerificationLink = (disaster: any) => {
     const baseLinks: { [key: string]: string } = {
       Earthquake: `https://earthquake.usgs.gov/earthquakes/map/?extent=${disaster.latitude},${disaster.longitude}`,
@@ -118,7 +206,6 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
       el.className = `disaster-type disaster-type-${disaster.type.toLowerCase()} ${getSeverityColor(disaster.severity)} cursor-pointer transition-transform hover:scale-110`;
       el.textContent = getDisasterEmoji(disaster.type);
       
-      // Add hover effect
       el.addEventListener('mouseenter', () => setHoveredDisaster(disaster));
       el.addEventListener('mouseleave', () => setHoveredDisaster(null));
       
@@ -196,6 +283,24 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
         <div className="flex items-center justify-between">
           <CardTitle>Live Disaster Map</CardTitle>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={trackUserLocation}
+              className="flex items-center gap-2"
+            >
+              <MapPin className="h-4 w-4" />
+              Track Location
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markSafeLocation}
+              className="flex items-center gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              Mark Safe Location
+            </Button>
             {disasters.length > 0 && (
               <Badge variant="secondary">
                 {disasters.length} Active Events
@@ -204,7 +309,7 @@ const DisasterMap = ({ disasters, onMarkerClick, isLoading = false }: DisasterMa
             <div className="relative group">
               <Info className="h-5 w-5 text-muted-foreground cursor-help" />
               <div className="absolute hidden group-hover:block right-0 top-6 w-64 p-2 bg-popover text-popover-foreground rounded-md shadow-lg text-sm">
-                Click on markers to see detailed information. Colors indicate severity levels.
+                Click on markers to see detailed information. Use the buttons to track your location or mark safe points.
               </div>
             </div>
           </div>
