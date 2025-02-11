@@ -1,11 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import DisasterMap from '@/components/DisasterMap';
 import DisasterList from '@/components/DisasterList';
 import Filters from '@/components/Filters';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Menu, ExternalLink } from 'lucide-react';
+import { Menu, ExternalLink, PhoneCall, AlertTriangle, BarChart3, Shield } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -27,15 +29,50 @@ const Index = () => {
     return baseLinks[disaster.type] || '#';
   };
 
+  const getEmergencyContacts = () => [
+    { name: 'Emergency Services', number: '911', type: 'Emergency' },
+    { name: 'FEMA', number: '1-800-621-3362', type: 'Federal' },
+    { name: 'Red Cross', number: '1-800-733-2767', type: 'Aid' },
+    { name: 'Poison Control', number: '1-800-222-1222', type: 'Medical' },
+  ];
+
+  const getSafetyTips = () => [
+    { type: 'Earthquake', tip: 'Drop, Cover, and Hold On. Stay away from windows.' },
+    { type: 'Flood', tip: 'Move to higher ground. Avoid walking through flowing water.' },
+    { type: 'Fire', tip: 'Have an evacuation plan. Keep low to avoid smoke inhalation.' },
+    { type: 'Weather', tip: 'Stay informed about conditions. Have emergency supplies ready.' },
+  ];
+
+  const getDisasterStats = () => {
+    const activeDisasters = disasters.length;
+    const severityCount = disasters.reduce((acc, disaster) => {
+      acc[disaster.severity] = (acc[disaster.severity] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    return {
+      total: activeDisasters,
+      highSeverity: disasters.filter(d => d.severity >= 4).length,
+      recentEvents: disasters.filter(d => {
+        const hoursSince = (Date.now() - new Date(d.timestamp).getTime()) / (1000 * 60 * 60);
+        return hoursSince <= 6;
+      }).length,
+      byType: disasters.reduce((acc, disaster) => {
+        acc[disaster.type] = (acc[disaster.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    };
+  };
+
+  const stats = getDisasterStats();
+
   useEffect(() => {
     const fetchDisasters = async () => {
       setLoading(true);
       try {
-        // Fetch earthquake data from USGS (open data)
         const earthquakeRes = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
         const earthquakeData = await earthquakeRes.json();
         
-        // Mock weather data (since we're not using weather.gov API)
         const mockWeatherEvents = [
           {
             id: 'w1',
@@ -61,7 +98,6 @@ const Index = () => {
           }
         ];
 
-        // Process and combine the data
         const processedDisasters = [
           ...earthquakeData.features.map((eq: any) => ({
             id: eq.id,
@@ -76,7 +112,6 @@ const Index = () => {
           ...mockWeatherEvents
         ];
 
-        // Filter disasters based on selected types and severity
         const filteredDisasters = processedDisasters.filter(disaster => {
           const typeMatch = selectedTypes.includes(disaster.type.toLowerCase());
           const severityMatch = disaster.severity >= severity;
@@ -157,6 +192,36 @@ const Index = () => {
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
         />
+
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PhoneCall className="h-5 w-5" />
+              Emergency Contacts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-4">
+                {getEmergencyContacts().map((contact, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-secondary/50 rounded-lg">
+                    <div>
+                      <p className="font-medium">{contact.name}</p>
+                      <Badge variant="outline">{contact.type}</Badge>
+                    </div>
+                    <a
+                      href={`tel:${contact.number}`}
+                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      {contact.number}
+                      <PhoneCall className="h-4 w-4" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
       
       <div className="flex-1 flex flex-col gap-4">
@@ -170,6 +235,68 @@ const Index = () => {
           </Button>
           <h1 className="text-2xl font-bold">Global Disaster Response System</h1>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Active Events
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.recentEvents} in the last 6 hours
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                High Severity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-500">
+                {stats.highSeverity}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Level 4-5 incidents
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Most Active Region
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {Object.entries(stats.byType).length > 0
+                  ? Object.entries(stats.byType).reduce((a, b) => 
+                      a[1] > b[1] ? a : b
+                    )[0]
+                  : "N/A"}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Alert Level
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-500">
+                {stats.highSeverity > 5 ? "High" : stats.highSeverity > 2 ? "Moderate" : "Low"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         
         <DisasterMap
           disasters={disasters}
@@ -177,10 +304,36 @@ const Index = () => {
           isLoading={loading}
         />
         
-        <DisasterList
-          disasters={disasters}
-          onDisasterSelect={handleDisasterSelect}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DisasterList
+            disasters={disasters}
+            onDisasterSelect={handleDisasterSelect}
+          />
+
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Safety Guidelines
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-4">
+                  {getSafetyTips().map((tip, index) => (
+                    <div key={index} className="p-4 rounded-lg bg-secondary/50">
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        {tip.type}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{tip.tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
