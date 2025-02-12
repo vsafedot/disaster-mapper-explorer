@@ -4,10 +4,24 @@ import DisasterList from '@/components/DisasterList';
 import Filters from '@/components/Filters';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Menu, ExternalLink, PhoneCall, AlertTriangle, BarChart3, Shield } from 'lucide-react';
+import { 
+  Menu, 
+  ExternalLink, 
+  PhoneCall, 
+  AlertTriangle, 
+  BarChart3, 
+  Shield,
+  Truck,
+  Building,
+  HeartPulse,
+  UserCog,
+  MessageSquare,
+  BookOpen
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -41,6 +55,27 @@ const Index = () => {
     { type: 'Flood', tip: 'Move to higher ground. Avoid walking through flowing water.' },
     { type: 'Fire', tip: 'Have an evacuation plan. Keep low to avoid smoke inhalation.' },
     { type: 'Weather', tip: 'Stay informed about conditions. Have emergency supplies ready.' },
+  ];
+
+  const getResourceCenters = () => [
+    { name: 'Central Medical Hub', type: 'Medical', address: '123 Main St', contact: '555-0123', supplies: ['Medical Kits', 'Medications', 'Emergency Equipment'] },
+    { name: 'Food Distribution Center', type: 'Food', address: '456 Oak Ave', contact: '555-0124', supplies: ['Non-perishable Food', 'Water', 'Baby Supplies'] },
+    { name: 'Emergency Shelter', type: 'Shelter', address: '789 Pine Rd', contact: '555-0125', capacity: '500 people' },
+    { name: 'Supply Warehouse', type: 'Supplies', address: '321 Elm St', contact: '555-0126', supplies: ['Blankets', 'Clothing', 'Hygiene Kits'] },
+  ];
+
+  const getTrainingResources = () => [
+    { title: 'Basic First Aid', duration: '2 hours', level: 'Beginner', link: '#' },
+    { title: 'Emergency Response', duration: '4 hours', level: 'Intermediate', link: '#' },
+    { title: 'Disaster Preparedness', duration: '3 hours', level: 'Advanced', link: '#' },
+    { title: 'Search and Rescue', duration: '6 hours', level: 'Professional', link: '#' },
+  ];
+
+  const getVolunteerOpportunities = () => [
+    { role: 'Medical Volunteer', requirements: ['Medical License', 'First Aid Certification'], location: 'Various' },
+    { role: 'Supply Coordinator', requirements: ['Logistics Experience', 'Valid Driver\'s License'], location: 'Distribution Centers' },
+    { role: 'Emergency Responder', requirements: ['Emergency Response Training', 'Physical Fitness'], location: 'City-wide' },
+    { role: 'Community Liaison', requirements: ['Communication Skills', 'Local Knowledge'], location: 'Community Centers' },
   ];
 
   const getDisasterStats = () => {
@@ -222,6 +257,33 @@ const Index = () => {
             </ScrollArea>
           </CardContent>
         </Card>
+        
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Resource Centers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-4">
+                {getResourceCenters().map((center, index) => (
+                  <div key={index} className="p-3 bg-secondary/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">{center.name}</h3>
+                      <Badge>{center.type}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{center.address}</p>
+                    <a href={`tel:${center.contact}`} className="text-sm text-blue-500 flex items-center gap-1 mt-1">
+                      <PhoneCall className="h-3 w-3" /> {center.contact}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
       
       <div className="flex-1 flex flex-col gap-4">
@@ -304,36 +366,147 @@ const Index = () => {
           isLoading={loading}
         />
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DisasterList
-            disasters={disasters}
-            onDisasterSelect={handleDisasterSelect}
-          />
+        <Tabs defaultValue="incidents" className="w-full">
+          <TabsList className="grid grid-cols-4 mb-4">
+            <TabsTrigger value="incidents">Active Incidents</TabsTrigger>
+            <TabsTrigger value="resources">Training & Resources</TabsTrigger>
+            <TabsTrigger value="volunteer">Volunteer</TabsTrigger>
+            <TabsTrigger value="guidelines">Safety Guidelines</TabsTrigger>
+          </TabsList>
 
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Safety Guidelines
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-4">
-                  {getSafetyTips().map((tip, index) => (
-                    <div key={index} className="p-4 rounded-lg bg-secondary/50">
-                      <h3 className="font-semibold mb-2 flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        {tip.type}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{tip.tip}</p>
+          <TabsContent value="incidents">
+            <DisasterList
+              disasters={disasters}
+              onDisasterSelect={handleDisasterSelect}
+            />
+          </TabsContent>
+
+          <TabsContent value="resources">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Training Programs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-4">
+                      {getTrainingResources().map((resource, index) => (
+                        <div key={index} className="p-4 bg-secondary/50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium">{resource.title}</h3>
+                            <Badge variant="outline">{resource.level}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Duration: {resource.duration}</p>
+                          <a href={resource.link} className="text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1 mt-2">
+                            Start Training <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Resource Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-4">
+                      {getResourceCenters().map((center, index) => (
+                        <div key={index} className="p-4 bg-secondary/50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium">{center.name}</h3>
+                            <Badge>{center.type}</Badge>
+                          </div>
+                          {center.supplies && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {center.supplies.map((supply, idx) => (
+                                <Badge key={idx} variant="outline">{supply}</Badge>
+                              ))}
+                            </div>
+                          )}
+                          {center.capacity && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Capacity: {center.capacity}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="volunteer">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HeartPulse className="h-5 w-5" />
+                  Volunteer Opportunities
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getVolunteerOpportunities().map((opportunity, index) => (
+                    <div key={index} className="p-4 bg-secondary/50 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium">{opportunity.role}</h3>
+                        <Badge variant="outline">{opportunity.location}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Requirements:</p>
+                        <ul className="text-sm text-muted-foreground list-disc pl-4">
+                          {opportunity.requirements.map((req, idx) => (
+                            <li key={idx}>{req}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <Button className="w-full mt-4" variant="outline">
+                        Apply Now
+                      </Button>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="guidelines">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Safety Guidelines & Resources
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {getSafetyTips().map((tip, index) => (
+                      <div key={index} className="p-4 rounded-lg bg-secondary/50">
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          {tip.type}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{tip.tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
